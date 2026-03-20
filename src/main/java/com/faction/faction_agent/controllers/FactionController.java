@@ -5,6 +5,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.faction.faction_agent.models.FactionDraft;
 import com.faction.faction_agent.services.FactionGenerationService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+
 
 
 @RestController
@@ -16,10 +19,21 @@ public class FactionController {
         this.factionGenerationService = factionGenerationService;
     }
 
-    @GetMapping("/faction")
-    public FactionDraft generateFaction() {
+    @GetMapping("/faction/draft")
+    public FactionDraft generateFactionDraft() {
         return factionGenerationService.geneFactionDraft();
     }
+
+    @GetMapping("faction/raw")
+    public String generateFactionRaw() {
+        return factionGenerationService.generateFactionRaw();
+    }
+    
+    @GetMapping("faction/generate")
+    public FactionDraft generateFaction() {
+        return factionGenerationService.generateFaction();
+    }
+    
     
 
 }
