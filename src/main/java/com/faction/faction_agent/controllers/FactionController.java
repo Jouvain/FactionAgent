@@ -34,7 +34,7 @@ public class FactionController {
         return factionGenerationService.generateFaction();
     }
 
-        @GetMapping("faction/random")
+    @GetMapping("faction/random")
     public FactionDraft generateRandomLedFaction() {
         return factionGenerationService.generateRandomLedFaction();
     }

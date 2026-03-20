@@ -4,6 +4,7 @@ import java.util.Random;
 
 import org.springframework.stereotype.Service;
 
+import com.faction.faction_agent.enums.FactionContext;
 import com.faction.faction_agent.enums.TypeFaction;
 import com.faction.faction_agent.llm.OllamaClient;
 import com.faction.faction_agent.models.FactionDraft;
@@ -91,12 +92,17 @@ public class FactionGenerationService {
         return values[new Random().nextInt(values.length)];
     }
 
+    private FactionContext randomizeContext() {
+        FactionContext[] values = FactionContext.values();
+        return values[new Random().nextInt(values.length)];
+    }
+
     public FactionDraft generateRandomLedFaction() {
         int maxAttempts = 3;
         int attempts = 0;
         while (attempts < maxAttempts) {
             attempts++;
-            String json = generateLedFactionRaw(randomizeType());
+            String json = generateLedFactionRaw(randomizeType(), randomizeContext());
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 FactionDraft faction = mapper.readValue(json, FactionDraft.class);
@@ -111,7 +117,7 @@ public class FactionGenerationService {
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
     }
 
-    public String generateLedFactionRaw(TypeFaction type) {
+    public String generateLedFactionRaw(TypeFaction type, FactionContext context) {
         String prompt = """
                 You are a strict JSON generator.
 
@@ -123,7 +129,7 @@ public class FactionGenerationService {
 
                 IMPORTANT :
                 - typeFaction MUST be exactly: %s
-                - the name and desc MUST be consistent with the typeFaction.
+                - The name, objectif and desc must be coherent with BOTH type and context
 
                 Guidelines:
                 - SECTE_CULTE → mystical, religious, secret rituals
@@ -132,6 +138,9 @@ public class FactionGenerationService {
                 - HORDE_LEGION → military, war, conquest
                 - CLAN_DYNASTIE → family, heritage, lineage
                 - BANDE_COMPAGNIE → small group, mercenaries, informal
+
+                Context guidelines:
+                %s
 
                 Rules:
                 - Output must be valid JSON
@@ -153,9 +162,42 @@ public class FactionGenerationService {
                 }
 
                 Generate a coherent and original faction for a role-playing game.
-                """.formatted(type.name());
+                """.formatted(
+                    context.name(),
+                    type.name(),
+                    getContextDescription(context)
+                );
         return ollamaClient.generate(prompt);
     }
+
+
+    private String getContextDescription(FactionContext context) {
+    return switch (context) {
+        case MEDIEVAL_REALISTE -> """
+            Realistic medieval setting.
+            No magic or supernatural elements.
+            Factions are political, religious or military.
+            Names should sound historical and grounded.
+        """;
+
+        case MODERN_GRIMDARK -> """
+            Lovecraftian horror setting in the 1920s.
+            Themes: occult, madness, hidden knowledge.
+            Factions are secret societies, cults, investigators.
+            Names should feel mysterious or unsettling.
+        """;
+
+        case CYBERPUNK -> """
+            Futuristic dystopian setting.
+            Themes: megacorporations, hackers, cybernetics.
+            Factions are gangs, corporations, AI groups.
+            Names should feel modern, edgy or corporate.
+        """;
+
+        default -> "Generic setting.";
+    };
+}
+
 
     private boolean isValid(FactionDraft faction) {
         return faction.getName() != null && !faction.getName().isBlank()
