@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.faction.faction_agent.models.FactionDraft;
 import com.faction.faction_agent.services.FactionGenerationService;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 
@@ -32,6 +32,11 @@ public class FactionController {
     @GetMapping("faction/generate")
     public FactionDraft generateFaction() {
         return factionGenerationService.generateFaction();
+    }
+
+        @GetMapping("faction/random")
+    public FactionDraft generateRandomLedFaction() {
+        return factionGenerationService.generateRandomLedFaction();
     }
     
     
