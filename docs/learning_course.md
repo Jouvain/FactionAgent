@@ -37,6 +37,8 @@ Je veux :
 - prompt engineering (manipulation/validation prompt dynamique)
 - agentique : mémoire courte
 - agentique : re-adaptation de prompt selon mémoire courte 
+- // CETTE BRIQUE = self-correction loop / reflexion pattern
 - agent state ??
+- // CETTE BRIQUE : short-term memory, single-agent loop + explicit state management
 - stratégies d'erreur ??
 - multi-tools ??

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.faction.faction_agent.enums.FactionContext;
 import com.faction.faction_agent.enums.TypeFaction;
 import com.faction.faction_agent.llm.OllamaClient;
+import com.faction.faction_agent.models.AgentState;
 import com.faction.faction_agent.models.FactionDraft;
 import com.faction.faction_agent.validation.ValidationResult;
 
@@ -93,31 +94,45 @@ public class FactionGenerationService {
 
     public FactionDraft generateRandomLedFaction() {
         int maxAttempts = 3;
-        int attempts = 0;
-        while (attempts < maxAttempts) {
-            attempts++;
+        
+
+        AgentState agentState = new AgentState();
+
+        while (agentState.getAttempts() < maxAttempts) {
+            agentState.incrementAttempts();
             String json = generateLedFactionRaw(randomizeType(), randomizeContext());
+            agentState.setLastJson(json);
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 FactionDraft faction = mapper.readValue(json, FactionDraft.class);
                 ValidationResult validation = validate(faction);
 
+                if(!validation.isValid()) {
+                    agentState.setLastErrors(validation.getErrors());
+                }
+
                 if(validation.isValid()) {
                     return faction;
                 } 
 
-                String correctionPrompt = buildCorrectionPrompt(json, validation.getErrors());
+                String correctionPrompt = buildCorrectionPrompt(agentState.getLastJson(), agentState.getLastErrors());
                 json = ollamaClient.generate(correctionPrompt);
+                agentState.setLastJson(json);
                 faction = mapper.readValue(json, FactionDraft.class);
 
                 validation = validate(faction);
+
+                if(!validation.isValid()) {
+                    agentState.setLastErrors(validation.getErrors());
+                }
+
                 if(validation.isValid()) {
                     return faction;
                 }
 
 
             } catch (Exception e) {
-                System.out.println("Parsing failed (attempt " + attempts + ")");
+                System.out.println("Parsing failed (attempt " + agentState.getAttempts() + ")");
             }
         }
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
