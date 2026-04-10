@@ -2,37 +2,43 @@ Je suis développeur (C#, architecture, backend, frontend) en formation Bac+3 Co
 
 Je travaille déjà sur plusieurs projets : Fractal JDR (jeu de rôle avec système structuré : Élément / Stimulus / Structure, génération D20×D6×D4, grilles narratifs, etc.) Fractal Compagnon (application compagnon modulaire avec modes En jeu / Préparation / Suivi) Divers projets techniques (Spring Boot, refactoring LESS monolithique, architecture middleware C#, etc.) 
 
-🎯 Objectif de ce fil Je veux explorer l’IA agentique et les LLM : 
+# Objectif de ce fil 
+- Je veux explorer l’IA agentique et les LLM : 
+- Comprendre conceptuellement comment fonctionnent les LLM (sans maths lourdes) 
+- Construire un outil pratique basé sur un LLM 🤖 
+- Créer progressivement un agent semi-autonome MAIS : Je n’ai aucune formation en machine learning / deep learning 
+- Je ne veux pas me lancer dans un apprentissage académique lourd 
+- J’ai déjà beaucoup de projets (travail + école + Fractal + autres) 
+- Je veux avancer tranquillement, par micro-projets 
+- Je veux que ce soit relié à mes projets existants (idéalement Fractal) 
 
-🧠 Comprendre conceptuellement comment fonctionnent les LLM (sans maths lourdes) 🛠 Construire un outil pratique basé sur un LLM 🤖 Créer progressivement un agent semi-autonome MAIS : Je n’ai aucune formation en machine learning / deep learning Je ne veux pas me lancer dans un apprentissage académique lourd J’ai déjà beaucoup de projets (travail + école + Fractal + autres) Je veux avancer tranquillement, par micro-projets Je veux que ce soit relié à mes projets existants (idéalement Fractal) 
+## Contraintes importantes 
+- Pas d’entraînement de modèle depuis zéro 
+- Pas de besoin GPU lourd 
+- Pas de complexité inutile 
+- Approche progressive 
+- Compréhension claire avant sophistication 
+- Architecture propre (je suis sensible à ça) 
 
-🧩 Contraintes importantes Pas d’entraînement de modèle depuis zéro Pas de besoin GPU lourd Pas de complexité inutile Approche progressive Compréhension claire avant sophistication Architecture propre (je suis sensible à ça) 🚀 Ce que je cherche Un plan progressif en 3 couches : 
+## Ce que je cherche 
+Un plan progressif en 3 couches : 
+1 - Compréhension Comment fonctionne un LLM (niveau conceptuel) Différence LLM / RAG / Agent Notions de contexte, hallucination, mémoire 2️ - Implémentation simple Utilisation d’un LLM local (ex : Ollama) Production de JSON structuré Intégration backend simple 
+3️ - Agent léger Ajout de mémoire Ajout d’outils Boucle décisionnelle simple Architecture propre et évolutive 
 
-1️⃣ Compréhension Comment fonctionne un LLM (niveau conceptuel) Différence LLM / RAG / Agent Notions de contexte, hallucination, mémoire 2️⃣ Implémentation simple Utilisation d’un LLM local (ex : Ollama) Production de JSON structuré Intégration backend simple 
-3️⃣ Agent léger Ajout de mémoire Ajout d’outils Boucle décisionnelle simple Architecture propre et évolutive 
+## Important 
+Je veux : 
+- Comprendre ce que je fais 
+- Produire quelque chose d’utile 
+- Ne pas me disperser 
+- Ne pas transformer ça en distraction chronophage 
+- Commence par me proposer : Une vue d’ensemble claire et structurée Puis un premier micro-projet de 2 heures maximum Idéalement relié à Fractal JDR
 
-🧠 Important Je veux : Comprendre ce que je fais Produire quelque chose d’utile Ne pas me disperser Ne pas transformer ça en distraction chronophage Commence par me proposer : Une vue d’ensemble claire et structurée Puis un premier micro-projet de 2 heures maximum Idéalement relié à Fractal JDR
-
-1) je veux comprendre ce qu'est un Agent IA. Donc : connaître sa définition, comprendre son architecture et workflow, et savoir en implémenter un très simple mais vrai. 
-2) je veux comprendre ce qu'est un LLM. Donc connaître sa définition, comprendre son architecture et workflow et savoir en créer OU fine-tuner un simple mais vrai. 
-3) je suis satisfait de ce que j'ai développé pour l'instant : j'aimerais déjà que ce générateur de faction via Ollama soit exploité par Fractal Compagnon (sans chercher à aller plus loin, juste appeler cet API FactionAgent pour créer une Faction depuis mon front Fractal-Comapgnon.
-
-Réponse GPT : 
-- brancher Fractal / FactionAgent
-- premier agent 
-    1. choisir Type OU random
-    2. générer Faction
-    3. Vérifier validité
-    4. SI KO -> regénérer
-    5. SI OK -> stocker
-- compréhension LLM 
-
-Définition concrète d’un agent
-Un agent =
-un système qui observe → décide → agit → boucle
-
-Dans ton cas
-observe = contexte / type
-décide = continuer / retry
-agit = appel LLM
-mémoire = liste factions
+## Progression :
+- prompt engineering (manipulation/validation prompt dynamique)
+- agentique : mémoire courte
+- agentique : re-adaptation de prompt selon mémoire courte 
+- // CETTE BRIQUE = self-correction loop / reflexion pattern
+- agent state ??
+- // CETTE BRIQUE : short-term memory, single-agent loop + explicit state management
+- stratégies d'erreur ??
+- multi-tools ??

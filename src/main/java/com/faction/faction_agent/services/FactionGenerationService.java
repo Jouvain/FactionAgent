@@ -1,5 +1,6 @@
 package com.faction.faction_agent.services;
 
+import java.util.List;
 import java.util.Random;
 
 import org.springframework.stereotype.Service;
@@ -7,7 +8,9 @@ import org.springframework.stereotype.Service;
 import com.faction.faction_agent.enums.FactionContext;
 import com.faction.faction_agent.enums.TypeFaction;
 import com.faction.faction_agent.llm.OllamaClient;
+import com.faction.faction_agent.models.AgentState;
 import com.faction.faction_agent.models.FactionDraft;
+import com.faction.faction_agent.validation.ValidationResult;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -19,6 +22,8 @@ public class FactionGenerationService {
     public FactionGenerationService(OllamaClient ollamaClient) {
         this.ollamaClient = ollamaClient;
     }
+
+    //#region public Methods
 
     public String generateFactionRaw() {
         String prompt = """
@@ -87,31 +92,47 @@ public class FactionGenerationService {
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
     }
 
-    private TypeFaction randomizeType() {
-        TypeFaction[] values = TypeFaction.values();
-        return values[new Random().nextInt(values.length)];
-    }
-
-    private FactionContext randomizeContext() {
-        FactionContext[] values = FactionContext.values();
-        return values[new Random().nextInt(values.length)];
-    }
-
     public FactionDraft generateRandomLedFaction() {
         int maxAttempts = 3;
-        int attempts = 0;
-        while (attempts < maxAttempts) {
-            attempts++;
+        
+
+        AgentState agentState = new AgentState();
+
+        while (agentState.getAttempts() < maxAttempts) {
+            agentState.incrementAttempts();
             String json = generateLedFactionRaw(randomizeType(), randomizeContext());
+            agentState.setLastJson(json);
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 FactionDraft faction = mapper.readValue(json, FactionDraft.class);
+                ValidationResult validation = validate(faction);
 
-                if (isValid(faction)) {
+                if(!validation.isValid()) {
+                    agentState.setLastErrors(validation.getErrors());
+                }
+
+                if(validation.isValid()) {
+                    return faction;
+                } 
+
+                String correctionPrompt = buildCorrectionPrompt(agentState.getLastJson(), agentState.getLastErrors());
+                json = ollamaClient.generate(correctionPrompt);
+                agentState.setLastJson(json);
+                faction = mapper.readValue(json, FactionDraft.class);
+
+                validation = validate(faction);
+
+                if(!validation.isValid()) {
+                    agentState.setLastErrors(validation.getErrors());
+                }
+
+                if(validation.isValid()) {
                     return faction;
                 }
+
+
             } catch (Exception e) {
-                System.out.println("Parsing failed (attempt " + attempts + ")");
+                System.out.println("Parsing failed (attempt " + agentState.getAttempts() + ")");
             }
         }
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
@@ -130,6 +151,9 @@ public class FactionGenerationService {
                 IMPORTANT :
                 - typeFaction MUST be exactly: %s
                 - The name, objectif and desc must be coherent with BOTH type and context
+                Context :
+                - name = %s
+                - guidelines = %s
 
                 Guidelines:
                 - SECTE_CULTE → mystical, religious, secret rituals
@@ -138,9 +162,6 @@ public class FactionGenerationService {
                 - HORDE_LEGION → military, war, conquest
                 - CLAN_DYNASTIE → family, heritage, lineage
                 - BANDE_COMPAGNIE → small group, mercenaries, informal
-
-                Context guidelines:
-                %s
 
                 Rules:
                 - Output must be valid JSON
@@ -163,49 +184,17 @@ public class FactionGenerationService {
 
                 Generate a coherent and original faction for a role-playing game.
                 """.formatted(
-                    context.name(),
                     type.name(),
+                    context.name(),
                     getContextDescription(context)
                 );
         return ollamaClient.generate(prompt);
     }
 
-
-    private String getContextDescription(FactionContext context) {
-    return switch (context) {
-        case MEDIEVAL_REALISTE -> """
-            Realistic medieval setting.
-            No magic or supernatural elements.
-            Factions are political, religious or military.
-            Names should sound historical and grounded.
-        """;
-
-        case MODERN_GRIMDARK -> """
-            Lovecraftian horror setting in the 1920s.
-            Themes: occult, madness, hidden knowledge.
-            Factions are secret societies, cults, investigators.
-            Names should feel mysterious or unsettling.
-        """;
-
-        case CYBERPUNK -> """
-            Futuristic dystopian setting.
-            Themes: megacorporations, hackers, cybernetics.
-            Factions are gangs, corporations, AI groups.
-            Names should feel modern, edgy or corporate.
-        """;
-
-        default -> "Generic setting.";
-    };
-}
+    //#endregion
 
 
-    private boolean isValid(FactionDraft faction) {
-        return faction.getName() != null && !faction.getName().isBlank()
-                && faction.getObjectif() != null && !faction.getObjectif().isBlank()
-                && faction.getTypeFaction() != null && !faction.getTypeFaction().isBlank()
-                && faction.getDesc() != null && !faction.getDesc().isBlank() && faction.getDesc().length() <= 300
-                && isValidTypeFaction(faction.getTypeFaction());
-    }
+    //#region private methods
 
     private boolean isValidTypeFaction(String type) {
         try {
@@ -215,5 +204,100 @@ public class FactionGenerationService {
             return false;
         }
     }
+
+    private boolean isValid(FactionDraft faction) {
+        return faction.getName() != null && !faction.getName().isBlank()
+                && faction.getObjectif() != null && !faction.getObjectif().isBlank()
+                && faction.getTypeFaction() != null && !faction.getTypeFaction().isBlank()
+                && faction.getDesc() != null && !faction.getDesc().isBlank() && faction.getDesc().length() <= 300
+                && isValidTypeFaction(faction.getTypeFaction());
+    }
+
+    private ValidationResult validate(FactionDraft faction) {
+        ValidationResult result = new ValidationResult();
+        result.setValid(true);
+        if(faction.getName() == null || faction.getName().isBlank()) {
+            result.addError("Name is missing or empty");
+        }
+        if(faction.getObjectif() == null || faction.getObjectif().isBlank()) {
+            result.addError("Objectif is missing or empty");
+        }
+        if(faction.getTypeFaction() == null || faction.getTypeFaction().isBlank()) {
+            result.addError("TypeFaction is missing or empty");
+        } else if (!isValidTypeFaction(faction.getTypeFaction())) {
+            result.addError("TypeFaction is invalid. Must be one of enum values");
+        }
+        if(faction.getDesc() == null || faction.getDesc().isBlank()) {
+            result.addError("Desc is missing or empty");
+        } else if (faction.getDesc().length() > 300) {
+            result.addError("Desc is too long (max 300 characters)");
+        }
+
+        return result;
+    }
+
+    private String getContextDescription(FactionContext context) {
+        return switch (context) {
+            case MEDIEVAL_REALISTE -> """
+                Realistic medieval setting.
+                No magic or supernatural elements.
+                Factions are political, religious or military.
+                Names should sound historical and grounded.
+            """;
+
+            case MODERN_GRIMDARK -> """
+                Lovecraftian horror setting in the 1920s.
+                Themes: occult, madness, hidden knowledge.
+                Factions are secret societies, cults, investigators.
+                Names should feel mysterious or unsettling.
+            """;
+
+            case CYBERPUNK -> """
+                Futuristic dystopian setting.
+                Themes: megacorporations, hackers, cybernetics.
+                Factions are gangs, corporations, AI groups.
+                Names should feel modern, edgy or corporate.
+            """;
+
+            default -> "Generic setting.";
+        };
+    }
+
+    private FactionContext randomizeContext() {
+        FactionContext[] values = FactionContext.values();
+        return values[new Random().nextInt(values.length)];
+    }
+    
+    private TypeFaction randomizeType() {
+        TypeFaction[] values = TypeFaction.values();
+        return values[new Random().nextInt(values.length)];
+    }    
+    
+    private String buildCorrectionPrompt(String invalidJson, List<String> errors) {
+        return """
+                You are a JSON correction engine.
+                Fix the following JSON.
+                Errors: 
+                %s
+
+                JSON:
+                %s
+
+                Rules:
+                - Return ONLY valid JSON
+                - Do not add explanations
+                - Keep original intent
+                """.formatted(String.join("\n", errors), invalidJson);
+    }
+
+    //#endregion
+
+
+
+
+
+
+
+
 
 }
