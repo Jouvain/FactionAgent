@@ -136,6 +136,9 @@ public class FactionGenerationService {
                 IMPORTANT :
                 - typeFaction MUST be exactly: %s
                 - The name, objectif and desc must be coherent with BOTH type and context
+                Context :
+                - name = %s
+                - guidelines = %s
 
                 Guidelines:
                 - SECTE_CULTE → mystical, religious, secret rituals
@@ -144,9 +147,6 @@ public class FactionGenerationService {
                 - HORDE_LEGION → military, war, conquest
                 - CLAN_DYNASTIE → family, heritage, lineage
                 - BANDE_COMPAGNIE → small group, mercenaries, informal
-
-                Context guidelines:
-                %s
 
                 Rules:
                 - Output must be valid JSON
@@ -169,8 +169,8 @@ public class FactionGenerationService {
 
                 Generate a coherent and original faction for a role-playing game.
                 """.formatted(
-                    context.name(),
                     type.name(),
+                    context.name(),
                     getContextDescription(context)
                 );
         return ollamaClient.generate(prompt);
