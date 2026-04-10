@@ -12,3 +12,27 @@ Je travaille déjà sur plusieurs projets : Fractal JDR (jeu de rôle avec syst�
 3️⃣ Agent léger Ajout de mémoire Ajout d’outils Boucle décisionnelle simple Architecture propre et évolutive 
 
 🧠 Important Je veux : Comprendre ce que je fais Produire quelque chose d’utile Ne pas me disperser Ne pas transformer ça en distraction chronophage Commence par me proposer : Une vue d’ensemble claire et structurée Puis un premier micro-projet de 2 heures maximum Idéalement relié à Fractal JDR
+
+1) je veux comprendre ce qu'est un Agent IA. Donc : connaître sa définition, comprendre son architecture et workflow, et savoir en implémenter un très simple mais vrai. 
+2) je veux comprendre ce qu'est un LLM. Donc connaître sa définition, comprendre son architecture et workflow et savoir en créer OU fine-tuner un simple mais vrai. 
+3) je suis satisfait de ce que j'ai développé pour l'instant : j'aimerais déjà que ce générateur de faction via Ollama soit exploité par Fractal Compagnon (sans chercher à aller plus loin, juste appeler cet API FactionAgent pour créer une Faction depuis mon front Fractal-Comapgnon.
+
+Réponse GPT : 
+- brancher Fractal / FactionAgent
+- premier agent 
+    1. choisir Type OU random
+    2. générer Faction
+    3. Vérifier validité
+    4. SI KO -> regénérer
+    5. SI OK -> stocker
+- compréhension LLM 
+
+Définition concrète d’un agent
+Un agent =
+un système qui observe → décide → agit → boucle
+
+Dans ton cas
+observe = contexte / type
+décide = continuer / retry
+agit = appel LLM
+mémoire = liste factions
