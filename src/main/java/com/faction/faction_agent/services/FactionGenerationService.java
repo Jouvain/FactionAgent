@@ -23,7 +23,7 @@ public class FactionGenerationService {
         this.ollamaClient = ollamaClient;
     }
 
-    //#region public Methods
+    // #region public Methods
 
     public String generateFactionRaw() {
         String prompt = """
@@ -94,7 +94,6 @@ public class FactionGenerationService {
 
     public FactionDraft generateRandomLedFaction() {
         int maxAttempts = 3;
-        
 
         AgentState agentState = new AgentState();
 
@@ -106,33 +105,20 @@ public class FactionGenerationService {
                 ObjectMapper mapper = new ObjectMapper();
                 FactionDraft faction = mapper.readValue(json, FactionDraft.class);
                 ValidationResult validation = validate(faction);
-
-                if(!validation.isValid()) {
-                    agentState.setLastErrors(validation.getErrors());
-                }
-
-                if(validation.isValid()) {
-                    return faction;
-                } 
-
-                String correctionPrompt = buildCorrectionPrompt(agentState.getLastJson(), agentState.getLastErrors());
-                json = ollamaClient.generate(correctionPrompt);
-                agentState.setLastJson(json);
-                faction = mapper.readValue(json, FactionDraft.class);
-
-                validation = validate(faction);
-
-                if(!validation.isValid()) {
-                    agentState.setLastErrors(validation.getErrors());
-                }
-
-                if(validation.isValid()) {
+                if (validation.isValid()) {
                     return faction;
                 }
 
-
+                agentState.setLastErrors(validation.getErrors());
+                String nextPrompt = decideNextPrompt(agentState, json);
+                json = ollamaClient.generate(nextPrompt);
             } catch (Exception e) {
                 System.out.println("Parsing failed (attempt " + agentState.getAttempts() + ")");
+                List<String> errors = List.of("Invalid JSON format");
+                agentState.setLastErrors(errors);
+
+                String nextPrompt = buildCorrectionPrompt(json, errors);
+                json = ollamaClient.generate(nextPrompt);
             }
         }
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
@@ -184,17 +170,15 @@ public class FactionGenerationService {
 
                 Generate a coherent and original faction for a role-playing game.
                 """.formatted(
-                    type.name(),
-                    context.name(),
-                    getContextDescription(context)
-                );
+                type.name(),
+                context.name(),
+                getContextDescription(context));
         return ollamaClient.generate(prompt);
     }
 
-    //#endregion
+    // #endregion
 
-
-    //#region private methods
+    // #region private methods
 
     private boolean isValidTypeFaction(String type) {
         try {
@@ -216,18 +200,18 @@ public class FactionGenerationService {
     private ValidationResult validate(FactionDraft faction) {
         ValidationResult result = new ValidationResult();
         result.setValid(true);
-        if(faction.getName() == null || faction.getName().isBlank()) {
+        if (faction.getName() == null || faction.getName().isBlank()) {
             result.addError("Name is missing or empty");
         }
-        if(faction.getObjectif() == null || faction.getObjectif().isBlank()) {
+        if (faction.getObjectif() == null || faction.getObjectif().isBlank()) {
             result.addError("Objectif is missing or empty");
         }
-        if(faction.getTypeFaction() == null || faction.getTypeFaction().isBlank()) {
+        if (faction.getTypeFaction() == null || faction.getTypeFaction().isBlank()) {
             result.addError("TypeFaction is missing or empty");
         } else if (!isValidTypeFaction(faction.getTypeFaction())) {
             result.addError("TypeFaction is invalid. Must be one of enum values");
         }
-        if(faction.getDesc() == null || faction.getDesc().isBlank()) {
+        if (faction.getDesc() == null || faction.getDesc().isBlank()) {
             result.addError("Desc is missing or empty");
         } else if (faction.getDesc().length() > 300) {
             result.addError("Desc is too long (max 300 characters)");
@@ -239,25 +223,25 @@ public class FactionGenerationService {
     private String getContextDescription(FactionContext context) {
         return switch (context) {
             case MEDIEVAL_REALISTE -> """
-                Realistic medieval setting.
-                No magic or supernatural elements.
-                Factions are political, religious or military.
-                Names should sound historical and grounded.
-            """;
+                        Realistic medieval setting.
+                        No magic or supernatural elements.
+                        Factions are political, religious or military.
+                        Names should sound historical and grounded.
+                    """;
 
             case MODERN_GRIMDARK -> """
-                Lovecraftian horror setting in the 1920s.
-                Themes: occult, madness, hidden knowledge.
-                Factions are secret societies, cults, investigators.
-                Names should feel mysterious or unsettling.
-            """;
+                        Lovecraftian horror setting in the 1920s.
+                        Themes: occult, madness, hidden knowledge.
+                        Factions are secret societies, cults, investigators.
+                        Names should feel mysterious or unsettling.
+                    """;
 
             case CYBERPUNK -> """
-                Futuristic dystopian setting.
-                Themes: megacorporations, hackers, cybernetics.
-                Factions are gangs, corporations, AI groups.
-                Names should feel modern, edgy or corporate.
-            """;
+                        Futuristic dystopian setting.
+                        Themes: megacorporations, hackers, cybernetics.
+                        Factions are gangs, corporations, AI groups.
+                        Names should feel modern, edgy or corporate.
+                    """;
 
             default -> "Generic setting.";
         };
@@ -267,17 +251,17 @@ public class FactionGenerationService {
         FactionContext[] values = FactionContext.values();
         return values[new Random().nextInt(values.length)];
     }
-    
+
     private TypeFaction randomizeType() {
         TypeFaction[] values = TypeFaction.values();
         return values[new Random().nextInt(values.length)];
-    }    
-    
+    }
+
     private String buildCorrectionPrompt(String invalidJson, List<String> errors) {
         return """
                 You are a JSON correction engine.
                 Fix the following JSON.
-                Errors: 
+                Errors:
                 %s
 
                 JSON:
@@ -290,14 +274,39 @@ public class FactionGenerationService {
                 """.formatted(String.join("\n", errors), invalidJson);
     }
 
-    //#endregion
+    private String decideNextPrompt(AgentState agentState, String originalJson) {
+        List<String> errors = agentState.getLastErrors();
 
+        // correction si erreur de JSON/parsing
+        if (errors.stream().anyMatch(e -> e.contains("json"))) {
+            return buildCorrectionPrompt(originalJson, errors);
+        }
 
+        return buildRegenerationPrompt(errors);
+    }
 
+    private String buildRegenerationPrompt(List<String> errors) {
+        return """
+                You are a strict JSON generator.
+                Previous attempt had these errors:
+                - %s
 
+                You MUST fix these issues.
+                Rules:
+                - Return ONLY valid JSON
+                - Respect all constraints strictly
+                - Do not repeat previous mistakes
 
+                JSON format:
+                {
+                "name": "string",
+                "typeFaction": "string",
+                "objectif": "string",
+                "desc": "string"
+                }
+                """.formatted(String.join("\n- ", errors));
+    }
 
-
-
+    // #endregion
 
 }

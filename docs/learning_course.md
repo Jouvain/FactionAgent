@@ -34,11 +34,14 @@ Je veux :
 - Commence par me proposer : Une vue d’ensemble claire et structurée Puis un premier micro-projet de 2 heures maximum Idéalement relié à Fractal JDR
 
 ## Progression :
-- prompt engineering (manipulation/validation prompt dynamique)
-- agentique : mémoire courte
-- agentique : re-adaptation de prompt selon mémoire courte 
-- // CETTE BRIQUE = self-correction loop / reflexion pattern
-- agent state ??
-- // CETTE BRIQUE : short-term memory, single-agent loop + explicit state management
+- prompt engineering (manipulation/validation prompt dynamique) OK
+- agentique : mémoire courte OK
+- agentique : re-adaptation de prompt selon mémoire courte OK
+- agent state OK
+### au 13/04/25, c'est un rule-based agent
+Donc un système LLM orgchestré / piloté par le code.
+C'est différent // l'inverse d'un *LLM agent* om le LLM orchestre et exécute le code.
+
 - stratégies d'erreur ??
 - multi-tools ??
+
