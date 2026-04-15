@@ -6,7 +6,8 @@ public class Decision {
     private String action;
     private String reason;
 
-    public Decision() {}
+    public Decision() {
+    }
 
     public Decision(String action, String reason) {
         this.action = action;
@@ -14,7 +15,12 @@ public class Decision {
     }
 
     public AgentAction toEnum() {
-        return AgentAction.valueOf(action);
+        try {
+            return AgentAction.valueOf(action);
+        } catch (Exception e) {
+            return AgentAction.REGENERATE;
+        }
+        
     }
 
     public String getAction() {
