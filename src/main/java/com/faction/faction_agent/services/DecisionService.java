@@ -47,38 +47,52 @@ public class DecisionService {
         int attempts = state.getAttempts();
 
         return """
-                You are not an assistant.
+                SYSTEM:
+                You are a deterministic decision engine inside a backend system.
 
-                You are a decision engine inside a software system.
-
-                Your task is to choose the next action.
-
-                You MUST choose one action from this list:
-                - FIX_JSON
-                - REGENERATE
-                - IMPROVE_CONTENT
-                - STOP
-
-                You are NOT allowed to refuse.
+                You are NOT an assistant.
                 You are NOT allowed to explain.
-                You are NOT allowed to apologize.
+                You are NOT allowed to refuse.
+                You MUST choose an action.
+
+                USER:
+                Choose exactly ONE action from this list:
+                FIX_JSON
+                REGENERATE
+                IMPROVE_CONTENT
+                STOP
 
                 You MUST respond ONLY with a valid JSON object.
+                No extra text. No explanation.
 
-                Format:
+                FORMAT (strict):
                 {
                   "action": "FIX_JSON",
-                  "reason": "short explanation"
+                  "reason": "short reason"
                 }
 
-                Input JSON:
+                EXAMPLE (valid response):
+                {
+                  "action": "REGENERATE",
+                  "reason": "invalid structure"
+                }
+
+                INPUT JSON:
                 %s
 
-                Validation errors:
+                VALIDATION ERRORS:
                 %s
 
-                Attempts:
+                ATTEMPTS:
                 %d
+
+                REMINDER:
+                - Output ONLY JSON
+                - No text before or after
+                - No additional fields
+                - No nested objects
+                - If you do not follow the format exactly, your answer is invalid
+                - Your output will be parsed by a program. Invalid format will cause a system failure
                 """.formatted(json, errors, attempts);
     }
 
