@@ -15,17 +15,59 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Contrôleur dédié au deboguage du comportement brut du LLM
+ * 
+ * <p>
+ * Il ne fait pas partie du pipeline-métier, c'est un bac à sable d'observation.
+ * </p>
+ */
+
 @RestController
 @RequestMapping("/test")
-@Tag(name = "Test", description = "LLM debugging and validation endpoints")
+@Tag(name = "LLM Raw", description = "LLM debugging and validation endpoints")
 @CrossOrigin(origins = "http://localhost:4200")
-public class TestController {
+public class LlmDebugController {
     private final OllamaClient ollamaClient;
 
-    public TestController(OllamaClient ollamaClient) {
+    public LlmDebugController(OllamaClient ollamaClient) {
         this.ollamaClient = ollamaClient;
     }
 
+    /**
+     * Envoie un prompt minimaliste au LLM demandant une réponse JSON stricte,
+     * puis tente de parser la réponse selon plusieurs stratégies.
+     *
+     * <p>
+     * Ce test ne repose sur aucun mécanisme de fiabilisation avancé :
+     * pas de retry, pas de validation métier, pas de correction automatique.
+     * </p>
+     *
+     * <p>
+     * Stratégies de parsing testées :
+     * <ul>
+     * <li><b>DIRECT</b> : mapping direct vers l'objet {@link Decision}</li>
+     * <li><b>NESTED</b> : extraction depuis un champ "response" (cas fréquent avec
+     * certains modèles)</li>
+     * <li><b>PARTIAL</b> : extraction partielle des champs "action" et
+     * "reason"</li>
+     * <li><b>FAILED</b> : échec complet avec retour brut pour analyse</li>
+     * </ul>
+     * </p>
+     *
+     * <p>
+     * Ce endpoint permet de :
+     * <ul>
+     * <li>Mesurer la robustesse du modèle face à des contraintes strictes</li>
+     * <li>Identifier les formats de réponse inattendus</li>
+     * <li>Valider ou ajuster les stratégies de parsing</li>
+     * </ul>
+     * </p>
+     *
+     * @return une chaîne indiquant le type de parsing réussi (DIRECT, NESTED,
+     *         PARTIAL, FAILED)
+     *         ainsi que les données extraites ou les données brutes en cas d’échec
+     */
     @GetMapping("/ollama")
     @Operation(summary = "Test LLM JSON response", description = "Sends a strict JSON prompt to the LLM and attempts multiple parsing strategies (direct, nested, partial). Used to debug LLM reliability and response structure.")
     @ApiResponses(value = {

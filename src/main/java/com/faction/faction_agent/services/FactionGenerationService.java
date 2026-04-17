@@ -14,6 +14,42 @@ import com.faction.faction_agent.validation.ValidationResult;
 
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Service responsable de la génération de factions via un LLM (Ollama),
+ * avec différents niveaux de fiabilisation et de contrôle.
+ *
+ * <p>
+ * Ce service implémente plusieurs stratégies de génération :
+ * </p>
+ *
+ * <ul>
+ * <li><b>Génération brute</b> : appel direct au LLM sans validation</li>
+ * <li><b>Pipeline fiable</b> : parsing + validation + retry</li>
+ * <li><b>Pipeline guidé</b> : correction dynamique basée sur les erreurs</li>
+ * </ul>
+ *
+ * <p>
+ * Il ne s'agit pas d'un système agentique complet :
+ * la logique de décision (retry, correction, régénération) est pilotée par le
+ * code Java,
+ * et non par le LLM lui-même.
+ * </p>
+ *
+ * <p>
+ * Ce service constitue une base robuste pour :
+ * </p>
+ * <ul>
+ * <li>Génération de contenu structuré (JSON)</li>
+ * <li>Validation métier côté backend</li>
+ * <li>Itérations contrôlées avec feedback au modèle</li>
+ * </ul>
+ *
+ * <p>
+ * Une évolution possible consiste à déléguer la prise de décision au LLM
+ * (via un {@code DecisionService}) pour construire un système agentique
+ * complet.
+ * </p>
+ */
 @Service
 public class FactionGenerationService {
 
@@ -25,6 +61,24 @@ public class FactionGenerationService {
 
     // #region public Methods
 
+    // =========================================================
+    // ================ MÉTHODES PUBLIQUES =====================
+    // =========================================================
+
+    /**
+     * Génère une faction sous forme de JSON brut via un prompt strict.
+     *
+     * <p>
+     * Aucun mécanisme de validation ou de correction n’est appliqué.
+     * Cette méthode est utile pour :
+     * </p>
+     * <ul>
+     * <li>Tester la qualité du prompt</li>
+     * <li>Observer le comportement direct du LLM</li>
+     * </ul>
+     *
+     * @return une chaîne JSON (non garantie valide)
+     */
     public String generateFactionRaw() {
         String prompt = """
                 You are a strict JSON generator.
@@ -72,6 +126,27 @@ public class FactionGenerationService {
                 "Une poignée de vieilles familles de la région, qui utilisent leur argent et entregent pour accomplir leur devoir.");
     }
 
+    /**
+     * Génère une faction valide via un pipeline simple avec retry.
+     *
+     * <p>
+     * Fonctionnement :
+     * </p>
+     * <ul>
+     * <li>Appel du LLM</li>
+     * <li>Parsing JSON vers {@link FactionDraft}</li>
+     * <li>Validation métier</li>
+     * <li>Retry jusqu’à un nombre maximal de tentatives</li>
+     * </ul>
+     *
+     * <p>
+     * Ce pipeline est robuste mais entièrement piloté par le code.
+     * Le LLM ne reçoit pas de feedback sur ses erreurs.
+     * </p>
+     *
+     * @return une faction valide
+     * @throws RuntimeException si le LLM échoue après plusieurs tentatives
+     */
     public FactionDraft generateFaction() {
         int maxAttempts = 3;
         int attempts = 0;
@@ -92,6 +167,32 @@ public class FactionGenerationService {
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
     }
 
+    /**
+     * Génère une faction en utilisant un pipeline guidé par les erreurs.
+     *
+     * <p>
+     * Fonctionnement :
+     * </p>
+     * <ul>
+     * <li>Génération initiale avec type et contexte aléatoires</li>
+     * <li>Validation métier détaillée</li>
+     * <li>Stockage des erreurs dans {@link AgentState}</li>
+     * <li>Génération d’un nouveau prompt basé sur les erreurs</li>
+     * <li>Correction ou régénération via le LLM</li>
+     * </ul>
+     *
+     * <p>
+     * Ce mécanisme introduit une boucle de feedback,
+     * mais la stratégie reste déterminée côté Java.
+     * </p>
+     *
+     * <p>
+     * Ce pipeline constitue une étape intermédiaire vers un système agentique.
+     * </p>
+     *
+     * @return une faction valide et cohérente avec son contexte
+     * @throws RuntimeException si le LLM échoue après plusieurs tentatives
+     */
     public FactionDraft generateRandomLedFaction() {
         int maxAttempts = 3;
 
@@ -124,6 +225,13 @@ public class FactionGenerationService {
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
     }
 
+    /**
+     * Génère une faction brute en imposant un type et un contexte narratif.
+     *
+     * @param type    type de faction imposé
+     * @param context contexte narratif
+     * @return JSON brut généré par le LLM
+     */
     public String generateLedFactionRaw(TypeFaction type, FactionContext context) {
         String prompt = """
                 You are a strict JSON generator.
@@ -180,6 +288,10 @@ public class FactionGenerationService {
 
     // #region private methods
 
+    // =========================================================
+    // ================ MÉTHODES PRIVÉES =======================
+    // =========================================================
+
     private boolean isValidTypeFaction(String type) {
         try {
             TypeFaction.valueOf(type);
@@ -189,6 +301,9 @@ public class FactionGenerationService {
         }
     }
 
+    /**
+     * Vérifie la validité globale d’une faction (version simple).
+     */
     private boolean isValid(FactionDraft faction) {
         return faction.getName() != null && !faction.getName().isBlank()
                 && faction.getObjectif() != null && !faction.getObjectif().isBlank()
@@ -197,6 +312,12 @@ public class FactionGenerationService {
                 && isValidTypeFaction(faction.getTypeFaction());
     }
 
+    /**
+     * Validation détaillée d’une faction avec retour d’erreurs.
+     *
+     * @param faction faction à valider
+     * @return résultat contenant la liste des erreurs
+     */
     private ValidationResult validate(FactionDraft faction) {
         ValidationResult result = new ValidationResult();
         result.setValid(true);
@@ -257,6 +378,9 @@ public class FactionGenerationService {
         return values[new Random().nextInt(values.length)];
     }
 
+    /**
+     * Génère un prompt de correction à partir d’un JSON invalide.
+     */
     private String buildCorrectionPrompt(String invalidJson, List<String> errors) {
         return """
                 You are a JSON correction engine.
@@ -274,6 +398,18 @@ public class FactionGenerationService {
                 """.formatted(String.join("\n", errors), invalidJson);
     }
 
+    /**
+     * Détermine le prochain prompt à envoyer au LLM
+     * en fonction des erreurs détectées.
+     *
+     * <p>
+     * Actuellement piloté par des règles simples côté Java :
+     * </p>
+     * <ul>
+     * <li>Erreur JSON → correction</li>
+     * <li>Erreur métier → régénération</li>
+     * </ul>
+     */
     private String decideNextPrompt(AgentState agentState, String originalJson) {
         List<String> errors = agentState.getLastErrors();
 
@@ -285,6 +421,9 @@ public class FactionGenerationService {
         return buildRegenerationPrompt(errors);
     }
 
+    /**
+     * Génère un prompt de régénération en listant les erreurs à corriger.
+     */
     private String buildRegenerationPrompt(List<String> errors) {
         return """
                 You are a strict JSON generator.
