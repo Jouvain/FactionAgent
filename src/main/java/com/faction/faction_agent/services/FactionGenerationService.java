@@ -203,32 +203,40 @@ public class FactionGenerationService {
      */
     public FactionDraft generateRandomLedFaction() {
         int maxAttempts = 3;
-
         AgentState agentState = new AgentState();
+
+        String json = generateLedFactionRaw(randomizeType(), randomizeContext());
 
         while (agentState.getAttempts() < maxAttempts) {
             agentState.incrementAttempts();
-            String json = generateLedFactionRaw(randomizeType(), randomizeContext());
             agentState.setLastJson(json);
+
             try {
                 FactionDraft faction = objectMapper.readValue(json, FactionDraft.class);
                 ValidationResult validation = validate(faction);
+
                 if (validation.isValid()) {
+                    System.out.println("==== Faction is valid ! ====");
                     return faction;
                 }
 
                 agentState.setLastErrors(validation.getErrors());
+
+                System.out.println("VALIDATION FAILED");
+                System.out.println("ERRORS = " + agentState.getLastErrors());
+
                 String nextPrompt = decideNextPrompt(agentState, json);
                 json = ollamaClient.generate(nextPrompt);
-            } catch (Exception e) {
-                System.out.println("Parsing failed (attempt " + agentState.getAttempts() + ")");
-                List<String> errors = List.of("Invalid JSON format");
-                agentState.setLastErrors(errors);
 
-                String nextPrompt = buildCorrectionPrompt(json, errors);
+            } catch (Exception e) {
+                System.out.println("PARSE FAILED");
+                agentState.setLastErrors(List.of("Invalid JSON format"));
+
+                String nextPrompt = decideNextPrompt(agentState, json);
                 json = ollamaClient.generate(nextPrompt);
             }
         }
+
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
     }
 
