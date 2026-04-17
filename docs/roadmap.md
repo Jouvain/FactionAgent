@@ -5,9 +5,9 @@
 ## Étape 1 : Mise en place du LLM local
 
 ### Features / tickets
-- [ ] Installer et configurer Ollama
-- [ ] Lancer un modèle (ex : Mistral)
-- [ ] Vérifier qu'il répond en local via CLI
+- [x] Installer et configurer Ollama
+- [x] Lancer un modèle (ex : Mistral)
+- [x] Vérifier qu'il répond en local via CLI
 
 ### Objectifs pédagogiques
 - Comprendre ce qu'est un LLM
@@ -27,10 +27,10 @@
 ## Étape 2 : Création de l'API FactionAgent (LLM orchestré par le code)
 
 ### Features / tickets
-- [ ] Créer un backend (Java / Spring ou équivalent)
-- [ ] Endpoint `/generateFaction`
-- [ ] Appel HTTP vers Ollama
-- [ ] Retour brut du LLM
+- [x] Créer un backend (Java / Spring ou équivalent)
+- [x] Endpoint `/generateFaction`
+- [x] Appel HTTP vers Ollama
+- [x] Retour brut du LLM
 
 ### Objectifs pédagogiques
 - Comprendre un système où le code pilote le LLM
@@ -49,8 +49,8 @@
 ## Étape 3 : Génération de contenu narratif (Faction)
 
 ### Features / tickets
-- [ ] Prompt de génération de faction
-- [ ] Retour texte structuré (nom, type, objectif…)
+- [x] Prompt de génération de faction
+- [x] Retour texte structuré (nom, type, objectif…)
 
 ### Objectifs pédagogiques
 - Comprendre comment guider un LLM
@@ -68,8 +68,8 @@
 ## Étape 4 : Introduction du JSON (structuration des sorties)
 
 ### Features / tickets
-- [ ] Modifier le prompt pour demander du JSON
-- [ ] Parser la réponse côté backend
+- [x] Modifier le prompt pour demander du JSON
+- [x] Parser la réponse côté backend
 
 ### Objectifs pédagogiques
 - Comprendre la difficulté de contraindre un LLM
@@ -87,8 +87,8 @@
 ## Étape 5 : Parsing tolérant et nettoyage
 
 ### Features / tickets
-- [ ] Nettoyer les réponses du LLM
-- [ ] Extraire le JSON même s'il est bruité
+- [x] Nettoyer les réponses du LLM
+- [x] Extraire le JSON même s'il est bruité
 - [ ] Gérer les erreurs
 
 ### Objectifs pédagogiques
@@ -107,7 +107,7 @@
 ## Étape 6 : Prompt engineering avancé (fiabilisation)
 
 ### Features / tickets
-- [ ] Écrire un prompt strict (format imposé)
+- [x] Écrire un prompt strict (format imposé)
 - [ ] Ajouter des exemples (few-shot)
 - [ ] Réduire les réponses parasites
 
@@ -128,9 +128,9 @@
 ## Étape 7 : Validation stricte + boucle de correction (pré-agent)
 
 ### Features / tickets
-- [ ] Valider le JSON (schéma strict)
-- [ ] Si invalide → relancer le LLM avec correction
-- [ ] Boucle simple côté code
+- [x] Valider le JSON (schéma strict)
+- [x] Si invalide → relancer le LLM avec correction
+- [x] Boucle simple côté code
 
 ### Objectifs pédagogiques
 - Introduire la notion de boucle
@@ -148,8 +148,8 @@
 ## Étape 8 : Intégration avec Fractal Compagnon
 
 ### Features / tickets
-- [ ] Appel de FactionAgent depuis le front
-- [ ] Création d'une Faction dans l'app
+- [x] Appel de FactionAgent depuis le front
+- [x] Création d'une Faction dans l'app
 
 ### Objectifs pédagogiques
 - Intégrer un LLM dans un produit réel
@@ -206,6 +206,7 @@
 ## Étape 11 : Mémoire et contexte (stateful agent)
 
 ### Features / tickets
+- [x] Mémoire courte - réutiliser les tentatives dans la même boucle
 - [ ] Stocker les tentatives
 - [ ] Fournir l'historique au LLM
 - [ ] Améliorer les corrections

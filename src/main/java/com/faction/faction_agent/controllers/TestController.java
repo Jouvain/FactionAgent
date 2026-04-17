@@ -8,11 +8,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.faction.faction_agent.llm.OllamaClient;
 import com.faction.faction_agent.models.Decision;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/test")
+@Tag(name = "Test", description = "LLM debugging and validation endpoints")
 @CrossOrigin(origins = "http://localhost:4200")
 public class TestController {
     private final OllamaClient ollamaClient;
@@ -22,6 +27,11 @@ public class TestController {
     }
 
     @GetMapping("/ollama")
+    @Operation(summary = "Test LLM JSON response", description = "Sends a strict JSON prompt to the LLM and attempts multiple parsing strategies (direct, nested, partial). Used to debug LLM reliability and response structure.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "LLM response processed and interpreted"),
+            @ApiResponse(responseCode = "500", description = "Unexpected error during parsing or LLM call")
+    })
     public String testOllama() {
         String prompt = """
                 Respond ONLY with JSON:
@@ -57,7 +67,8 @@ public class TestController {
                     String reason = root.has("reason") ? root.get("reason").asString() : "no reason";
                     return "[PARTIAL] " + action + " | " + reason;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             return "[FAILED]\nRAW " + raw + "\n CLEANED : \n " + cleaned;
         }
     }
