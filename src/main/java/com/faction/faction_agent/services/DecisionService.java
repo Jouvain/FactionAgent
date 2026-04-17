@@ -1,12 +1,14 @@
 package com.faction.faction_agent.services;
 
+import org.springframework.stereotype.Service;
+
 import com.faction.faction_agent.enums.AgentAction;
 import com.faction.faction_agent.llm.OllamaClient;
 import com.faction.faction_agent.models.AgentState;
 import com.faction.faction_agent.models.Decision;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import tools.jackson.databind.ObjectMapper;
-
+@Service
 public class DecisionService {
     private final OllamaClient ollamaClient;
     private final ObjectMapper objectMapper;

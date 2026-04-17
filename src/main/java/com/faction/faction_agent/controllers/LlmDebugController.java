@@ -7,13 +7,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.faction.faction_agent.llm.OllamaClient;
 import com.faction.faction_agent.models.Decision;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * Controleur dedie au deboguage du comportement brut du LLM.
@@ -97,9 +97,9 @@ public class LlmDebugController {
                     return "[NESTED] " + decision.getAction() + decision.getReason();
                 }
 
-                if (root.has("action") && root.get("action").isString()) {
-                    String action = root.get("action").asString();
-                    String reason = root.has("reason") ? root.get("reason").asString() : "no reason";
+                if (root.has("action") && root.get("action").isTextual()) {
+                    String action = root.get("action").asText();
+                    String reason = root.has("reason") ? root.get("reason").asText() : "no reason";
                     return "[PARTIAL] " + action + " | " + reason;
                 }
             } catch (Exception ignored) {

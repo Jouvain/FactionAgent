@@ -5,14 +5,14 @@ import java.util.Random;
 
 import org.springframework.stereotype.Service;
 
+import com.faction.faction_agent.enums.AgentAction;
 import com.faction.faction_agent.enums.FactionContext;
 import com.faction.faction_agent.enums.TypeFaction;
 import com.faction.faction_agent.llm.OllamaClient;
 import com.faction.faction_agent.models.AgentState;
 import com.faction.faction_agent.models.FactionDraft;
 import com.faction.faction_agent.validation.ValidationResult;
-
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Service responsable de la génération de factions via un LLM (Ollama),
@@ -55,8 +55,17 @@ public class FactionGenerationService {
 
     private final OllamaClient ollamaClient;
 
-    public FactionGenerationService(OllamaClient ollamaClient) {
+    private final DecisionService decisionService;
+
+    private final ObjectMapper objectMapper;
+
+    public FactionGenerationService(
+            OllamaClient ollamaClient,
+            DecisionService decisionService,
+            ObjectMapper objectMapper) {
         this.ollamaClient = ollamaClient;
+        this.decisionService = decisionService;
+        this.objectMapper = objectMapper;
     }
 
     // #region public Methods
@@ -154,8 +163,7 @@ public class FactionGenerationService {
             attempts++;
             String json = generateFactionRaw();
             try {
-                ObjectMapper mapper = new ObjectMapper();
-                FactionDraft faction = mapper.readValue(json, FactionDraft.class);
+                FactionDraft faction = objectMapper.readValue(json, FactionDraft.class);
 
                 if (isValid(faction)) {
                     return faction;
@@ -203,8 +211,7 @@ public class FactionGenerationService {
             String json = generateLedFactionRaw(randomizeType(), randomizeContext());
             agentState.setLastJson(json);
             try {
-                ObjectMapper mapper = new ObjectMapper();
-                FactionDraft faction = mapper.readValue(json, FactionDraft.class);
+                FactionDraft faction = objectMapper.readValue(json, FactionDraft.class);
                 ValidationResult validation = validate(faction);
                 if (validation.isValid()) {
                     return faction;
@@ -411,14 +418,33 @@ public class FactionGenerationService {
      * </ul>
      */
     private String decideNextPrompt(AgentState agentState, String originalJson) {
-        List<String> errors = agentState.getLastErrors();
+        AgentAction action = decisionService.decide(agentState);
+        System.out.println("=== AGENT DECISION === " + action);
+        System.out.println("=== ERRORS === " + agentState.getLastErrors());
+        System.out.println("=== LAST JSON === " + agentState.getLastJson());
+        return switch (action) {
+            case FIX_JSON -> buildCorrectionPrompt(originalJson, agentState.getLastErrors());
+            case REGENERATE -> buildRegenerationPrompt(agentState.getLastErrors());
+            case IMPROVE_CONTENT -> buildImprovementPrompt(originalJson);
+            case STOP -> throw new RuntimeException("Agent decided to stop");
+        };
+    }
 
-        // correction si erreur de JSON/parsing
-        if (errors.stream().anyMatch(e -> e.contains("json"))) {
-            return buildCorrectionPrompt(originalJson, errors);
-        }
+    private String buildImprovementPrompt(String json) {
+        return """
+                Improve the following JSON content.
 
-        return buildRegenerationPrompt(errors);
+                Keep structure identical.
+                Keep all fields.
+                Improve coherence and richness.
+
+                JSON:
+                %s
+
+                Rules:
+                - Return ONLY valid JSON
+                - Do not change structure
+                """.formatted(json);
     }
 
     /**
