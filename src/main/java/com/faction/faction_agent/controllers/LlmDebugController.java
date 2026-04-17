@@ -16,13 +16,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Contrôleur dédié au deboguage du comportement brut du LLM
- * 
- * <p>
- * Il ne fait pas partie du pipeline-métier, c'est un bac à sable d'observation.
- * </p>
+ * Controleur dedie au deboguage du comportement brut du LLM.
+ *
+ * <p>Il ne fait pas partie du pipeline metier; c'est un bac a sable d'observation.</p>
  */
-
 @RestController
 @RequestMapping("/test")
 @Tag(name = "LLM Raw", description = "LLM debugging and validation endpoints")
@@ -35,38 +32,34 @@ public class LlmDebugController {
     }
 
     /**
-     * Envoie un prompt minimaliste au LLM demandant une réponse JSON stricte,
-     * puis tente de parser la réponse selon plusieurs stratégies.
+     * Envoie un prompt minimaliste au LLM demandant une reponse JSON stricte,
+     * puis tente de parser la reponse selon plusieurs strategies.
      *
      * <p>
-     * Ce test ne repose sur aucun mécanisme de fiabilisation avancé :
-     * pas de retry, pas de validation métier, pas de correction automatique.
+     * Ce test ne repose sur aucun mecanisme de fiabilisation avance:
+     * pas de retry, pas de validation metier, pas de correction automatique.
      * </p>
      *
-     * <p>
-     * Stratégies de parsing testées :
+     * <p>Strategies de parsing testees:</p>
      * <ul>
      * <li><b>DIRECT</b> : mapping direct vers l'objet {@link Decision}</li>
-     * <li><b>NESTED</b> : extraction depuis un champ "response" (cas fréquent avec
-     * certains modèles)</li>
+     * <li><b>NESTED</b> : extraction depuis un champ "response" (cas frequent avec
+     * certains modeles)</li>
      * <li><b>PARTIAL</b> : extraction partielle des champs "action" et
      * "reason"</li>
-     * <li><b>FAILED</b> : échec complet avec retour brut pour analyse</li>
+     * <li><b>FAILED</b> : echec complet avec retour brut pour analyse</li>
      * </ul>
-     * </p>
      *
-     * <p>
-     * Ce endpoint permet de :
+     * <p>Ce endpoint permet de:</p>
      * <ul>
-     * <li>Mesurer la robustesse du modèle face à des contraintes strictes</li>
-     * <li>Identifier les formats de réponse inattendus</li>
-     * <li>Valider ou ajuster les stratégies de parsing</li>
+     * <li>Mesurer la robustesse du modele face a des contraintes strictes</li>
+     * <li>Identifier les formats de reponse inattendus</li>
+     * <li>Valider ou ajuster les strategies de parsing</li>
      * </ul>
-     * </p>
      *
-     * @return une chaîne indiquant le type de parsing réussi (DIRECT, NESTED,
-     *         PARTIAL, FAILED)
-     *         ainsi que les données extraites ou les données brutes en cas d’échec
+     * @return une chaine indiquant le type de parsing reussi (DIRECT, NESTED,
+     *         PARTIAL, FAILED) ainsi que les donnees extraites ou les donnees
+     *         brutes en cas d'echec
      */
     @GetMapping("/ollama")
     @Operation(summary = "Test LLM JSON response", description = "Sends a strict JSON prompt to the LLM and attempts multiple parsing strategies (direct, nested, partial). Used to debug LLM reliability and response structure.")
