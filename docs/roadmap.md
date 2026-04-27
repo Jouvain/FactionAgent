@@ -277,3 +277,8 @@
 | **Autonomie** | Capacité à atteindre un objectif sans intervention externe |
 | **Pipeline** | Chaîne de traitement |
 | **Robustesse** | Capacité à gérer les erreurs |
+---
+
+## Documents complementaires
+
+- Tickets Etape 10 (agent minimal viable) : `docs/step10_tickets.md`
