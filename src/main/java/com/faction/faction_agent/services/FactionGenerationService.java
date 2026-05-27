@@ -53,6 +53,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class FactionGenerationService {
 
+    private final AgentOrchestratorService agentOrchestratorService;
+
     private final OllamaClient ollamaClient;
 
     private final DecisionService decisionService;
@@ -62,10 +64,11 @@ public class FactionGenerationService {
     public FactionGenerationService(
             OllamaClient ollamaClient,
             DecisionService decisionService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper, AgentOrchestratorService agentOrchestratorService) {
         this.ollamaClient = ollamaClient;
         this.decisionService = decisionService;
         this.objectMapper = objectMapper;
+        this.agentOrchestratorService = agentOrchestratorService;
     }
 
     // #region public Methods
@@ -207,35 +210,37 @@ public class FactionGenerationService {
 
         String json = generateLedFactionRaw(randomizeType(), randomizeContext());
 
-        while (agentState.getAttempts() < maxAttempts) {
-            agentState.incrementAttempts();
-            agentState.setLastJson(json);
+        return agentOrchestratorService.runLoop(json, maxAttempts);
 
-            try {
-                FactionDraft faction = objectMapper.readValue(json, FactionDraft.class);
-                ValidationResult validation = validate(faction);
+        // while (agentState.getAttempts() < maxAttempts) {
+        //     agentState.incrementAttempts();
+        //     agentState.setLastJson(json);
+            
+        //     try {
+        //         FactionDraft faction = objectMapper.readValue(json, FactionDraft.class);
+        //         ValidationResult validation = validate(faction);
 
-                if (validation.isValid()) {
-                    System.out.println("==== Faction is valid ! ====");
-                    return faction;
-                }
+        //         if (validation.isValid()) {
+        //             System.out.println("==== Faction is valid ! ====");
+        //             return faction;
+        //         }
 
-                agentState.setLastErrors(validation.getErrors());
+        //         agentState.setLastErrors(validation.getErrors());
 
-                System.out.println("VALIDATION FAILED");
-                System.out.println("ERRORS = " + agentState.getLastErrors());
+        //         System.out.println("VALIDATION FAILED");
+        //         System.out.println("ERRORS = " + agentState.getLastErrors());
 
-                String nextPrompt = decideNextPrompt(agentState, json);
-                json = ollamaClient.generate(nextPrompt);
+        //         String nextPrompt = decideNextPrompt(agentState, json);
+        //         json = ollamaClient.generate(nextPrompt);
 
-            } catch (Exception e) {
-                System.out.println("PARSE FAILED");
-                agentState.setLastErrors(List.of("Invalid JSON format"));
+        //     } catch (Exception e) {
+        //         System.out.println("PARSE FAILED");
+        //         agentState.setLastErrors(List.of("Invalid JSON format"));
 
-                String nextPrompt = decideNextPrompt(agentState, json);
-                json = ollamaClient.generate(nextPrompt);
-            }
-        }
+        //         String nextPrompt = decideNextPrompt(agentState, json);
+        //         json = ollamaClient.generate(nextPrompt);
+        //     }
+        // }
 
         throw new RuntimeException("LLM failed after " + maxAttempts + " attempts");
     }
